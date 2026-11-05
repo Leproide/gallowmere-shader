@@ -440,8 +440,34 @@ void main()
     vec3 fogColor = max(skyHue, vec3(0.02, 0.025, 0.03)) * global.GM_FOG_BRIGHT * mix(0.5, 1.0, outdoor);
     vec3 viewDir = normalize(vec3((vTexCoord - global.Projection.zw) * global.Projection.xy, 1.0));
     float towardMoon = max(dot(viewDir, moonDir()), 0.0);
-    fogColor += MOON_COLOR * global.GM_MOON * global.GM_MOON_HAZE * outdoor * (0.01 + 0.05 * pow(towardMoon, 4.0) + 0.2 * pow(towardMoon, 32.0));
+    vec3 moonHaze = MOON_COLOR * global.GM_MOON * global.GM_MOON_HAZE * outdoor * (0.01 + 0.05 * pow(towardMoon, 4.0) + 0.2 * pow(towardMoon, 32.0));
+    fogColor += moonHaze;
     float down = global.CameraAvailable > 0.5 ? toWorldDirection(viewDir).y : -viewDir.y;
+
+    // lago (livello dell'acqua del fork, SceneWaterLevel): il gioco non disegna la superficie, solo
+    // qualche scintilla sul nero. Dove il raggio di vista incontra il livello prima della geometria
+    // (o senza geometria sotto) si disegna l'acqua, con il fondo se c'e' e acqua profonda se no
+    if (global.GM_WATER > 0.0 && global.SceneWaterLevel.y > 0.5 && gbuffer() && global.DepthAvailable > 0.5 &&
+        atmosScene.z >= 0.01 && view == 0)
+    {
+        float lakeZ = waterSurfaceZ(vTexCoord);
+        bool geo = hasGeometry(d);
+        if (lakeZ > 1.0 && (!geo || lakeZ < viewZ(d)))
+        {
+            vec3 ray = vec3((vTexCoord - global.Projection.zw) * global.Projection.xy, 1.0);
+            vec3 surface = ray * lakeZ;
+            vec3 bottomP = geo ? viewPos(vTexCoord, d) : ray * (lakeZ + 600.0);
+            vec3 under = geo ? toLinear(sceneUnderUi(original, uiLayer(vTexCoord))) : vec3(0.0);
+            vec3 col = shadeWater(under, surface, bottomP, fogColor);
+            float ld = length(surface);
+            float lf = clamp((ld - global.GM_FOG_START) / max(global.GM_FOG_END - global.GM_FOG_START, 1.0), 0.0, 1.0) * global.GM_FOG;
+            float lh = (1.0 - exp(-max(ld - 150.0, 0.0) / 2500.0)) * global.GM_HAZE;
+            float limit = atmosScene.x;
+            float fade = limit > 500.0 ? smoothstep(limit * 0.75, limit * 0.97, surface.z) * global.GM_EDGE : 0.0;
+            FragColor = vec4(mix(mix(col, fogColor, max(lf, lh)), vec3(0.0), fade), 1.0);
+            return;
+        }
+    }
 
     if (!gbuffer() || !hasGeometry(d))
     {
@@ -451,14 +477,27 @@ void main()
             FragColor = vec4(view == 0 ? toLinear(original) : vec3(0.0), view == 0 ? 0.0 : 1.0);
             return;
         }
-        // cielo: nebbia verso l'orizzonte; sotto l'orizzonte (oltre i bordi della mappa) nero
+        // cielo e fondale (montagne, pareti dipinte): foschia del colore del cielo, piu' fitta
+        // all'orizzonte e anche appena sotto (le montagne sfumano come in lontananza)
         vec4 sui = uiLayer(vTexCoord);
         vec3 sky = toLinear(sceneUnderUi(original, sui));
-        float horizon = 1.0 - smoothstep(-0.35, 0.0, -down);
-        sky = mix(sky, fogColor, global.GM_FOG_SKY * mix(0.25, 1.0, horizon));
-        // solo dove il fondale e' scuro (il vuoto): nelle caverne il fondale 2D sono le pareti, si tiene
+        float band = exp(-abs(down) / 0.12);
+        vec3 skyHaze = max(skyHue, vec3(0.02, 0.025, 0.03)) * mix(0.5, 1.0, outdoor) + moonHaze;
+        sky = mix(sky, skyHaze, global.GM_FOG_SKY * mix(0.2, 1.0, band));
+        // vuoto oltre i bordi della mappa al nero: sotto l'orizzonte, dove il raggio incontrerebbe il
+        // terreno (quota stimata in atmos) entro il limite di disegno, cioe' dove il terreno dovrebbe
+        // esserci e non c'e'. Oltre il limite e' fondale lontano (montagne) e resta con la foschia.
+        // Solo dove il fondale e' scuro: nelle caverne il fondale 2D sono le pareti e si tiene
         float voidLike = 1.0 - smoothstep(0.1, 0.22, luma(original));
-        sky = mix(sky, vec3(0.0), smoothstep(0.0, 0.06, down) * global.GM_EDGE * voidLike);
+        vec4 atmosFloor = texture(Atmos, ATMOS_FLOOR);
+        float voidAmount = smoothstep(0.04, 0.16, down);
+        if (atmosFloor.y > 0.5 && global.CameraAvailable > 0.5 && down > 0.0)
+        {
+            float hit = max(atmosFloor.x - global.CameraTranslation.y, 0.0) / down;
+            float reach = max(atmosScene.x, 3000.0);
+            voidAmount = (1.0 - smoothstep(reach, reach * 1.6, hit)) * smoothstep(0.0, 0.01, down);
+        }
+        sky = mix(sky, vec3(0.0), voidAmount * global.GM_EDGE * voidLike);
         FragColor = vec4(sky, 1.0);
         return;
     }

@@ -8,13 +8,16 @@
 // of the License, or (at your option) any later version. This program is distributed WITHOUT
 // ANY WARRANTY. See <https://www.gnu.org/licenses/>.
 //
-// Gallowmere - atmos: dati della scena (2x1), mediati nel tempo.
+// Gallowmere - atmos: dati della scena (3x1), mediati nel tempo.
 //  texel 0: rgb = colore medio del cielo visibile (base della nebbia), a = apertura
 //           (1 = all'aperto con cielo visibile in alto, 0 = interno/caverna)
 //  texel 1: x = limite di disegno (distanza del gioco o geometria piu' lontana), y = vuoto
 //           sotto l'orizzonte, z = presenza della scena 3D (0 = schermata 2D/menu),
 //           w = 0.5 + 0.5 * luce media del gioco sulla geometria (non mediata: vicino a 0 durante
 //           le dissolvenze al nero del gioco, li' lo shader non aggiunge luce)
+//  texel 2: x = quota del terreno (y del mondo) stimata dalle superfici viste verso il basso,
+//           y = 1 se valida. Serve a distinguere il vuoto oltre i bordi della mappa (dove il
+//           terreno dovrebbe esserci, entro il limite di disegno) dal fondale lontano (montagne)
 
 #include "common.inc"
 
@@ -30,7 +33,7 @@ void main()
     bool hasPrevious = previous.a > 0.25;
     vec3 sky = vec3(0.0);
     float skyCount = 0.0, open = 0.0, upper = 0.0, below = 0.0, geometry = 0.0, far = 0.0;
-    float gameLight = 0.0, lit = 0.0;
+    float gameLight = 0.0, lit = 0.0, floorY = 0.0, floorCount = 0.0;
     const int GX = 24, GY = 16;
     for (int y = 0; y < GY; y++)
     for (int x = 0; x < GX; x++)
@@ -47,6 +50,15 @@ void main()
         {
             geometry += 1.0;
             far = max(far, viewPos(uv, d).z);
+            if (global.CameraAvailable > 0.5)
+            {
+                vec3 gr = vec3((uv - global.Projection.zw) * global.Projection.xy, 1.0);
+                if (normalize(toWorldDirection(gr)).y > 0.15)
+                {
+                    floorY += toWorld(viewPos(uv, d)).y;
+                    floorCount += 1.0;
+                }
+            }
             if (gbuffer() && texture(Albedo, uv).a >= 0.5)
             {
                 gameLight += luma(toLinear(texture(Shading, uv).rgb * 2.0));
@@ -61,7 +73,15 @@ void main()
         skyCount += 1.0;
     }
     float total = float(GX * GY);
-    if (vTexCoord.x < 0.5)
+    if (vTexCoord.x > 2.0 / 3.0)
+    {
+        if (floorCount < 3.0) { FragColor = hasPrevious ? previous : vec4(0.0, 0.0, 0.0, 1.0); return; }
+        float fy = floorY / floorCount;
+        bool valid = hasPrevious && previous.y > 0.5;
+        FragColor = vec4(valid ? mix(previous.x, fy, 0.1) : fy, 1.0, 0.0, 1.0);
+        return;
+    }
+    if (vTexCoord.x < 1.0 / 3.0)
     {
         vec3 color = skyCount >= 4.0 ? sky / skyCount : hasPrevious ? previous.rgb : vec3(0.01, 0.015, 0.02);
         // se non si vede sopra l'orizzonte (telecamera verso il basso) si tiene il valore precedente

@@ -62,7 +62,7 @@ Il rapporto si applica all'immagine del gioco, non a una ricomposizione: scritte
 - **Light sources**, **Light source range**, **Light source minimum reach**: luce delle fiamme, delle fonti di energia e delle magie (posizioni fornite da RecompOne); la portata minima evita che le luci degli sprite piccoli illuminino solo pochi pixel.
 - **Light on overlays**: quanta luce nuova prendono menu semitrasparenti, effetti e scritte sopra le superfici (0 = come nel gioco).
 - **Fog**, **Fog start**, **Fog end**, **Fog brightness**, **Base haze**: nebbia di distanza col colore del cielo del livello (tinto dalla maledizione) e foschia che si vede già da vicino; dove il gioco ha portato il colore al nero la nebbia non schiarisce.
-- **Fog over sky**: nebbia sul cielo verso l'orizzonte.
+- **Fog over sky**: foschia del colore del cielo su cielo e fondale (montagne, pareti dipinte), più fitta all'orizzonte.
 - **Draw distance fade**: la geometria vicina al limite di disegno e il vuoto sotto l'orizzonte (oltre i bordi della mappa) vanno al nero, come nell'originale.
 - **Shadows on game light**: quanto le ombre scuriscono anche la luce originale del gioco (che non ha ombre degli oggetti).
 - **Indoor darkness**: al chiuso (poco cielo visibile in alto) luna, cielo e foschia a terra si attenuano.

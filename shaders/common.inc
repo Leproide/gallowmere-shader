@@ -35,7 +35,7 @@
 #pragma parameter GM_FOG_END "Fog end" 12000.0 500.0 40000.0 250.0
 #pragma parameter GM_FOG_BRIGHT "Fog brightness" 0.35 0.0 2.0 0.05
 #pragma parameter GM_HAZE "Base haze" 0.04 0.0 1.0 0.02
-#pragma parameter GM_FOG_SKY "Fog over sky" 0.35 0.0 1.0 0.05
+#pragma parameter GM_FOG_SKY "Fog over sky" 0.5 0.0 1.0 0.05
 #pragma parameter GM_EDGE "Draw distance fade" 1.0 0.0 1.0 0.05
 #pragma parameter GM_SHADOW_GAME "Shadows on game light" 0.45 0.0 1.0 0.05
 #pragma parameter GM_CURSE "Curse tint" 0.15 0.0 1.0 0.05
@@ -164,8 +164,9 @@ const int MATERIAL_TRANSLUCENT = 255;
 const vec3 MOON_COLOR = vec3(0.55, 0.66, 1.0);
 const vec3 CURSE_FOG = vec3(0.020, 0.034, 0.038);
 const vec3 CURSE_TINT = vec3(0.60, 0.82, 0.84);
-const vec2 ATMOS_SKY = vec2(0.25, 0.5);
-const vec2 ATMOS_SCENE = vec2(0.75, 0.5);
+const vec2 ATMOS_SKY = vec2(1.0 / 6.0, 0.5);
+const vec2 ATMOS_SCENE = vec2(0.5, 0.5);
+const vec2 ATMOS_FLOOR = vec2(5.0 / 6.0, 0.5);
 
 vec3 toLinear(vec3 c) { return pow(max(c, vec3(0.0)), vec3(2.2)); }
 vec3 toGamma(vec3 c) { return pow(max(c, vec3(0.0)), vec3(1.0 / 2.2)); }
