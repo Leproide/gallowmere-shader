@@ -8,7 +8,7 @@
 
 Shader per [MediEvilRecomp ITA](https://github.com/Leproide/MediEvilRecomp-ITA) che usa i dati veri del rendering del gioco invece di stimarli dall'immagine finale.
 
-[![MediEvilRecomp ITA - video](https://img.youtube.com/vi/cfNv3-evlD4/maxresdefault.jpg)](https://youtu.be/cfNv3-evlD4)
+<a href="https://youtu.be/cfNv3-evlD4"><img width="880" alt="MediEvilRecomp ITA - video" src="https://github.com/user-attachments/assets/b1fe4491-e6d6-4ccd-a5ea-4a051a296bff" /></a>
 
 **Cosa fa:** luce del gioco con occlusione ambientale, luna e luci puntiformi calcolate sulle normali vere, ombre per la luna e la luce principale, fiamme che tremolano, riflessi su armi, scudi e acqua, nebbia di distanza e foschia a terra, raggi di luna, bloom.
 
